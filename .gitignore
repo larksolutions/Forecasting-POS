@@ -1,0 +1,59 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+out/
+
+# Tailwind CSS output
+src/renderer/styles/output.css
+
+# Database files (optional - uncomment to ignore)
+# *.db
+# *.db-shm
+# *.db-wal
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Package manager
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Electron builder output
+*.dmg
+*.deb
+*.rpm
+*.exe
+*.AppImage
+*.snap

@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'">
+  <title>POS & Forecasting System</title>
+  <link rel="stylesheet" href="styles/output.css">
+</head>
+<body class="bg-gray-100 h-screen overflow-hidden">
+  <!-- Main Container -->
+  <div class="flex h-full">
+    <!-- Sidebar -->
+    <div class="w-64 bg-gradient-to-b from-primary-800 to-primary-900 text-white flex flex-col">
+      <!-- Logo -->
+      <div class="p-6 border-b border-primary-700">
+        <h1 class="text-2xl font-bold">POS System</h1>
+        <p class="text-xs text-primary-200 mt-1">Point of Sale & Forecasting</p>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="flex-1 p-4">
+        <ul class="space-y-2">
+          <li>
+            <button onclick="app.switchView('dashboard')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-primary-700 transition-colors flex items-center space-x-3">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+              </svg>
+              <span>Dashboard</span>
+            </button>
+          </li>
+          <li>
+            <button onclick="app.switchView('pos')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-primary-700 transition-colors flex items-center space-x-3 active">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+              </svg>
+              <span>Point of Sale</span>
+            </button>
+          </li>
+          <li>
+            <button onclick="app.switchView('products')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-primary-700 transition-colors flex items-center space-x-3">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+              </svg>
+              <span>Products</span>
+            </button>
+          </li>
+          <li>
+            <button onclick="app.switchView('sales')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-primary-700 transition-colors flex items-center space-x-3">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+              </svg>
+              <span>Sales History</span>
+            </button>
+          </li>
+          <li>
+            <button onclick="app.switchView('customers')" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-primary-700 transition-colors flex items-center space-x-3">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+              </svg>
+              <span>Customers</span>
+            </button>
+          </li>
+        </ul>
+      </nav>
+
+      <!-- User Info -->
+      <div class="p-4 border-t border-primary-700">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center">
+            <span class="text-sm font-semibold">AD</span>
+          </div>
+          <div class="flex-1">
+            <p class="text-sm font-medium">Admin User</p>
+            <p class="text-xs text-primary-200">Store Manager</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="flex-1 flex flex-col overflow-hidden">
+      <!-- Header -->
+      <header class="bg-white shadow-sm px-6 py-4 flex items-center justify-between">
+        <div>
+          <h2 id="page-title" class="text-2xl font-semibold text-gray-800">Point of Sale</h2>
+          <p id="page-subtitle" class="text-sm text-gray-500">Process customer transactions</p>
+        </div>
+        <div class="flex items-center space-x-4">
+          <div class="text-right">
+            <p class="text-sm text-gray-500">Current Date</p>
+            <p id="current-date" class="text-sm font-semibold text-gray-800"></p>
+          </div>
+        </div>
+      </header>
+
+      <!-- Content Views -->
+      <main class="flex-1 overflow-auto p-6">
+        <!-- Dashboard View -->
+        <div id="dashboard-view" class="view hidden">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            <div class="card">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm text-gray-500 mb-1">Today's Sales</p>
+                  <p class="text-2xl font-bold text-gray-800" id="stat-today-sales">$0.00</p>
+                </div>
+                <div class="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center">
+                  <svg class="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm text-gray-500 mb-1">Transactions</p>
+                  <p class="text-2xl font-bold text-gray-800" id="stat-transactions">0</p>
+                </div>
+                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                  <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm text-gray-500 mb-1">Average Sale</p>
+                  <p class="text-2xl font-bold text-gray-800" id="stat-avg-sale">$0.00</p>
+                </div>
+                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm text-gray-500 mb-1">Products</p>
+                  <p class="text-2xl font-bold text-gray-800" id="stat-products">0</p>
+                </div>
+                <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                  <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="card">
+              <h3 class="text-lg font-semibold mb-4">Recent Sales</h3>
+              <div id="recent-sales-list" class="space-y-3">
+                <p class="text-gray-500 text-sm">No sales found</p>
+              </div>
+            </div>
+
+            <div class="card">
+              <h3 class="text-lg font-semibold mb-4">Top Products</h3>
+              <div id="top-products-list" class="space-y-3">
+                <p class="text-gray-500 text-sm">No data available</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- POS View -->
+        <div id="pos-view" class="view">
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Product Selection -->
+            <div class="lg:col-span-2">
+              <div class="card">
+                <div class="mb-4">
+                  <input 
+                    type="text" 
+                    id="product-search" 
+                    class="input-field" 
+                    placeholder="Search products by name, SKU, or barcode..."
+                    oninput="app.searchProducts(this.value)"
+                  >
+                </div>
+                <div id="products-grid" class="grid grid-cols-2 md:grid-cols-3 gap-4 max-h-[600px] overflow-y-auto">
+                  <!-- Products will be loaded here -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Cart & Checkout -->
+            <div class="lg:col-span-1">
+              <div class="card sticky top-0">
+                <h3 class="text-lg font-semibold mb-4">Current Sale</h3>
+                
+                <div id="cart-items" class="space-y-2 mb-4 max-h-64 overflow-y-auto">
+                  <p class="text-gray-500 text-sm text-center py-8">Cart is empty</p>
+                </div>
+
+                <div class="border-t pt-4 space-y-2">
+                  <div class="flex justify-between text-sm">
+                    <span class="text-gray-600">Subtotal:</span>
+                    <span id="cart-subtotal" class="font-medium">$0.00</span>
+                  </div>
+                  <div class="flex justify-between text-sm">
+                    <span class="text-gray-600">Tax (0%):</span>
+                    <span id="cart-tax" class="font-medium">$0.00</span>
+                  </div>
+                  <div class="flex justify-between text-lg font-bold border-t pt-2">
+                    <span>Total:</span>
+                    <span id="cart-total">$0.00</span>
+                  </div>
+                </div>
+
+                <div class="mt-4 space-y-2">
+                  <select id="payment-method" class="input-field">
+                    <option value="cash">Cash</option>
+                    <option value="card">Credit/Debit Card</option>
+                    <option value="mobile">Mobile Payment</option>
+                  </select>
+                  
+                  <button onclick="app.completeSale()" class="btn-primary w-full">
+                    Complete Sale
+                  </button>
+                  <button onclick="app.clearCart()" class="btn-secondary w-full">
+                    Clear Cart
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Products View -->
+        <div id="products-view" class="view hidden">
+          <div class="card">
+            <div class="flex justify-between items-center mb-6">
+              <h3 class="text-lg font-semibold">Product Management</h3>
+              <button onclick="app.showProductModal()" class="btn-primary">
+                + Add Product
+              </button>
+            </div>
+            
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SKU</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="products-table-body" class="bg-white divide-y divide-gray-200">
+                  <!-- Products will be loaded here -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sales View -->
+        <div id="sales-view" class="view hidden">
+          <div class="card">
+            <h3 class="text-lg font-semibold mb-6">Sales History</h3>
+            
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="sales-table-body" class="bg-white divide-y divide-gray-200">
+                  <!-- Sales will be loaded here -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Customers View -->
+        <div id="customers-view" class="view hidden">
+          <div class="card">
+            <div class="flex justify-between items-center mb-6">
+              <h3 class="text-lg font-semibold">Customer Management</h3>
+              <button onclick="app.showCustomerModal()" class="btn-primary">
+                + Add Customer
+              </button>
+            </div>
+            
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">City</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="customers-table-body" class="bg-white divide-y divide-gray-200">
+                  <!-- Customers will be loaded here -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Modal Container (for future use) -->
+  <div id="modal-container" class="hidden"></div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>
