@@ -106,7 +106,16 @@ ipcMain.handle('db:updateCustomer', async (event, id, customer) => {
   return db.updateCustomer(id, customer);
 });
 
+ipcMain.handle('db:deleteCustomer', async (event, id) => {
+  return db.deleteCustomer(id);
+});
+
 // Statistics
 ipcMain.handle('db:getStatistics', async (event, dateRange) => {
   return db.getStatistics(dateRange);
+});
+
+// Forecasting
+ipcMain.handle('db:getForecastData', async () => {
+  return db.getForecastData();
 });

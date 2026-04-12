@@ -18,7 +18,11 @@ contextBridge.exposeInMainWorld('api', {
   getCustomers: () => ipcRenderer.invoke('db:getCustomers'),
   addCustomer: (customer) => ipcRenderer.invoke('db:addCustomer', customer),
   updateCustomer: (id, customer) => ipcRenderer.invoke('db:updateCustomer', id, customer),
+  deleteCustomer: (id) => ipcRenderer.invoke('db:deleteCustomer', id),
 
   // Statistics
-  getStatistics: (dateRange) => ipcRenderer.invoke('db:getStatistics', dateRange)
+  getStatistics: (dateRange) => ipcRenderer.invoke('db:getStatistics', dateRange),
+
+  // Forecasting
+  getForecastData: () => ipcRenderer.invoke('db:getForecastData')
 });

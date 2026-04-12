@@ -1,7 +1,7 @@
 {
-  "name": "pos-forecasting-app",
+  "name": "cafe-de-marcelino",
   "version": "1.0.0",
-  "description": "Point of Sale and Forecasting Desktop Application",
+  "description": "Café de Marcelino - Point of Sale and Forecasting Desktop Application",
   "main": "src/main/main.js",
   "scripts": {
     "start": "electron .",
@@ -35,7 +35,7 @@
   },
   "build": {
     "appId": "com.pos.forecasting",
-    "productName": "POS Forecasting",
+    "productName": "Café de Marcelino",
     "directories": {
       "output": "dist"
     },
