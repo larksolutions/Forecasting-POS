@@ -23,46 +23,56 @@ A desktop Point of Sale system with built-in sales forecasting using Holt's Doub
 
 ## Setup (Windows)
 
-### Prerequisites
+### What You Need (One-Time Setup)
 
-Install these first:
+1. **Install Node.js**
+   - Go to [https://nodejs.org](https://nodejs.org)
+   - Click the big green **"LTS"** button to download
+   - Run the installer → click **Next** on everything → **Finish**
+   - ✅ That's it, Node.js is installed
 
-1. **Node.js** (v18 or later) — [https://nodejs.org](https://nodejs.org)
-2. **Git** — [https://git-scm.com](https://git-scm.com)
-3. **Visual Studio Build Tools** (required for `better-sqlite3`):
+2. **Install Visual Studio Build Tools** (needed for the database)
+   - Go to [https://visualstudio.microsoft.com/visual-cpp-build-tools/](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
+   - Click **"Download Build Tools"**
+   - Run the installer → check **"Desktop development with C++"** → click **Install**
+   - Wait for it to finish, then restart your computer
+
+### How to Run the App
+
+1. **Download the project**
+   - Download and extract the project folder to your Desktop (or anywhere you like)
+
+2. **Open Command Prompt**
+   - Press `Windows + R`, type `cmd`, press Enter
+   - Navigate to the project folder:
+     ```
+     cd Desktop\Forecasting-POS
+     ```
+     (Change the path if you put it somewhere else)
+
+3. **Install the app** (only needed the first time)
    ```
-   npm install -g windows-build-tools
+   npm install
    ```
-   Or install manually: [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) → select "Desktop development with C++"
+   Wait until it finishes (this may take a few minutes).
 
-### Installation
+4. **Build the styles** (only needed the first time, or after style changes)
+   ```
+   npm run build:css
+   ```
 
-```bash
-# 1. Clone the project
-git clone <your-repo-url>
-cd Forecasting-POS
+5. **Start the app**
+   ```
+   npm start
+   ```
+   The app will open automatically. You're ready to go!
 
-# 2. Install dependencies
-npm install
+### Running the App Next Time
 
-# 3. Build Tailwind CSS (run once, or keep running in a separate terminal)
-npm run build:css
-
-# 4. Start the app
-npm start
-```
-
-### Development Mode (with DevTools)
-
-```bash
-npm run dev
-```
-
-### Build for Distribution
-
-```bash
-npm run dist
-```
+After the first setup, you just need steps 2 and 5:
+1. Open Command Prompt
+2. `cd Desktop\Forecasting-POS`
+3. `npm start`
 
 ---
 
