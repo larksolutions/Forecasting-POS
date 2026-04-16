@@ -208,8 +208,8 @@ class POSDatabase {
 
   addProduct(product) {
     const stmt = this.db.prepare(`
-      INSERT INTO products (name, sku, description, price, cost, stock, category, barcode)
-      VALUES (@name, @sku, @description, @price, @cost, @stock, @category, @barcode)
+      INSERT INTO products (name, sku, description, price, cost, stock, category, barcode, image)
+      VALUES (@name, @sku, @description, @price, @cost, @stock, @category, @barcode, @image)
     `);
     const result = stmt.run(product);
     return { id: result.lastInsertRowid, ...product };
@@ -220,7 +220,7 @@ class POSDatabase {
       UPDATE products
       SET name = @name, sku = @sku, description = @description, 
           price = @price, cost = @cost, stock = @stock, 
-          category = @category, barcode = @barcode, updated_at = CURRENT_TIMESTAMP
+          category = @category, barcode = @barcode, image = @image, updated_at = CURRENT_TIMESTAMP
       WHERE id = @id
     `);
     stmt.run({ id, ...product });

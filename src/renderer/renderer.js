@@ -12,6 +12,8 @@ const app = {
   productsPage: 1,
   productsPerPage: 10,
   productsSearch: '',
+  taxRate: 0.12, // 12% VAT
+  productImagesPath: '', // resolved at init
 
   // Initialize the application
   async init() {
@@ -22,9 +24,11 @@ const app = {
     this.bindEvents();
 
     // Load initial data
+    this.productImagesPath = await window.api.getProductImagesPath();
     await this.loadProducts();
     await this.loadCustomers();
     await this.loadSales();
+    this.populateCustomerDropdown();
     
     // Initialize views
     this.switchView('pos');
@@ -47,6 +51,17 @@ const app = {
     // Cart buttons
     document.getElementById('btn-complete-sale').addEventListener('click', () => this.completeSale());
     document.getElementById('btn-clear-cart').addEventListener('click', () => this.clearCart());
+    document.getElementById('cart-discount').addEventListener('input', () => this.updateCartTotals());
+
+    // Receipt modal
+    document.getElementById('btn-close-receipt').addEventListener('click', () => this.closeReceiptModal());
+    document.getElementById('btn-close-receipt-bottom').addEventListener('click', () => this.closeReceiptModal());
+    document.getElementById('receipt-modal-backdrop').addEventListener('click', () => this.closeReceiptModal());
+    document.getElementById('btn-print-receipt').addEventListener('click', () => this.printReceipt());
+
+    // Product image upload
+    document.getElementById('product-image-input').addEventListener('change', (e) => this.handleProductImageUpload(e));
+    document.getElementById('btn-remove-product-image').addEventListener('click', () => this.removeProductImage());
 
     // Product management
     document.getElementById('btn-add-product').addEventListener('click', () => this.showProductModal());
@@ -314,10 +329,13 @@ const app = {
         class="card cursor-pointer hover:shadow-lg transition-shadow ${product.stock <= 0 ? 'opacity-50' : ''}"
         data-product-id="${product.id}"
       >
-        <div class="aspect-square bg-gray-100 rounded-lg mb-3 flex items-center justify-center">
-          <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
-          </svg>
+        <div class="aspect-square bg-gray-100 rounded-lg mb-3 flex items-center justify-center overflow-hidden">
+          ${product.image
+            ? `<img src="${this.getProductImageUrl(product.image)}" alt="${this.escapeHtml(product.name)}" class="w-full h-full object-cover">`
+            : `<svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+              </svg>`
+          }
         </div>
         <h4 class="font-medium text-sm mb-1 truncate">${this.escapeHtml(product.name)}</h4>
         <p class="text-xs text-gray-500 mb-2">${this.escapeHtml(product.category || 'Uncategorized')}</p>
@@ -431,8 +449,10 @@ const app = {
 
   updateCartTotals() {
     const subtotal = this.cart.reduce((sum, item) => sum + item.total, 0);
-    const tax = 0; // Can be calculated based on your tax rate
-    const total = subtotal + tax;
+    const discount = parseFloat(document.getElementById('cart-discount').value) || 0;
+    const taxableAmount = Math.max(0, subtotal - discount);
+    const tax = Math.round(taxableAmount * this.taxRate * 100) / 100;
+    const total = taxableAmount + tax;
 
     document.getElementById('cart-subtotal').textContent = this.formatCurrency(subtotal);
     document.getElementById('cart-tax').textContent = this.formatCurrency(tax);
@@ -446,33 +466,57 @@ const app = {
     }
 
     const subtotal = this.cart.reduce((sum, item) => sum + item.total, 0);
-    const tax = 0;
-    const total = subtotal + tax;
+    const discount = parseFloat(document.getElementById('cart-discount').value) || 0;
+    const taxableAmount = Math.max(0, subtotal - discount);
+    const tax = Math.round(taxableAmount * this.taxRate * 100) / 100;
+    const total = taxableAmount + tax;
     const paymentMethod = document.getElementById('payment-method').value;
+    const customerSelect = document.getElementById('sale-customer');
+    const customerId = customerSelect.value ? parseInt(customerSelect.value) : null;
+    const customerName = customerId
+      ? customerSelect.options[customerSelect.selectedIndex].text
+      : 'Walk-in';
+
+    const saleItems = this.cart.map(item => ({
+      product_id: item.product_id,
+      quantity: item.quantity,
+      unit_price: item.unit_price,
+      total: item.total
+    }));
 
     const sale = {
-      customer_id: null,
+      customer_id: customerId,
       total: total,
       subtotal: subtotal,
       tax: tax,
-      discount: 0,
+      discount: discount,
       payment_method: paymentMethod,
-      items: this.cart.map(item => ({
-        product_id: item.product_id,
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-        total: item.total
-      }))
+      items: saleItems
     };
 
     try {
-      await window.api.addSale(sale);
+      const savedSale = await window.api.addSale(sale);
       this.showNotification('Sale completed successfully!', 'success');
+
+      // Show receipt
+      this.showReceipt({
+        id: savedSale.id,
+        created_at: savedSale.created_at || new Date().toISOString(),
+        customer_name: customerName,
+        payment_method: paymentMethod,
+        subtotal,
+        discount,
+        tax,
+        total,
+        items: this.cart.map(item => ({ ...item }))
+      });
+
       this.clearCart();
-      await this.loadProducts(); // Reload products to update stock
-      await this.loadSales();    // Reload sales so history is up to date
+      document.getElementById('cart-discount').value = '0';
+      document.getElementById('sale-customer').value = '';
+      await this.loadProducts();
+      await this.loadSales();
       this.renderProducts();
-      // If sales view is visible, re-render it immediately
       if (this.currentView === 'sales') {
         this.renderSalesTable();
       }
@@ -485,6 +529,164 @@ const app = {
   clearCart() {
     this.cart = [];
     this.renderCart();
+  },
+
+  // Populate customer dropdown in POS
+  populateCustomerDropdown() {
+    const select = document.getElementById('sale-customer');
+    const current = select.value;
+    select.innerHTML = '<option value="">Walk-in</option>' +
+      this.customers.map(c =>
+        `<option value="${c.id}">${this.escapeHtml(c.name)}</option>`
+      ).join('');
+    select.value = current;
+  },
+
+  // ===== Receipt Modal =====
+  showReceipt(data) {
+    const content = document.getElementById('receipt-content');
+    content.innerHTML = `
+      <div class="text-center mb-4">
+        <h2 class="text-xl font-bold">Café de Marcelino</h2>
+        <p class="text-xs text-gray-500">Official Receipt</p>
+      </div>
+      <div class="text-sm space-y-1 mb-4">
+        <div class="flex justify-between"><span class="text-gray-500">Receipt #</span><span class="font-medium">${data.id}</span></div>
+        <div class="flex justify-between"><span class="text-gray-500">Date</span><span>${new Date(data.created_at).toLocaleString()}</span></div>
+        <div class="flex justify-between"><span class="text-gray-500">Customer</span><span>${this.escapeHtml(data.customer_name)}</span></div>
+        <div class="flex justify-between"><span class="text-gray-500">Payment</span><span>${this.capitalize(data.payment_method)}</span></div>
+      </div>
+      <table class="w-full text-sm mb-4">
+        <thead>
+          <tr class="border-b border-dashed">
+            <th class="text-left py-1">Item</th>
+            <th class="text-center py-1">Qty</th>
+            <th class="text-right py-1">Price</th>
+            <th class="text-right py-1">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${data.items.map(item => `
+            <tr class="border-b border-gray-100">
+              <td class="py-1">${this.escapeHtml(item.name)}</td>
+              <td class="text-center py-1">${item.quantity}</td>
+              <td class="text-right py-1">${this.formatCurrency(item.unit_price)}</td>
+              <td class="text-right py-1">${this.formatCurrency(item.total)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+      <div class="border-t border-dashed pt-2 space-y-1 text-sm">
+        <div class="flex justify-between"><span class="text-gray-500">Subtotal</span><span>${this.formatCurrency(data.subtotal)}</span></div>
+        ${data.discount > 0 ? `<div class="flex justify-between text-red-600"><span>Discount</span><span>-${this.formatCurrency(data.discount)}</span></div>` : ''}
+        <div class="flex justify-between"><span class="text-gray-500">VAT (12%)</span><span>${this.formatCurrency(data.tax)}</span></div>
+        <div class="flex justify-between font-bold text-base border-t pt-1 mt-1"><span>Total</span><span>${this.formatCurrency(data.total)}</span></div>
+      </div>
+      <p class="text-center text-xs text-gray-400 mt-4">Thank you for your purchase!</p>
+    `;
+    document.getElementById('receipt-modal').classList.remove('hidden');
+  },
+
+  closeReceiptModal() {
+    document.getElementById('receipt-modal').classList.add('hidden');
+  },
+
+  printReceipt() {
+    const content = document.getElementById('receipt-content').innerHTML;
+    const win = window.open('', '_blank', 'width=400,height=600');
+    win.document.write(`
+      <html><head><title>Receipt</title>
+      <style>
+        body { font-family: system-ui, sans-serif; padding: 20px; max-width: 360px; margin: 0 auto; font-size: 13px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 4px 0; text-align: left; }
+        th:last-child, td:last-child, th:nth-child(3), td:nth-child(3) { text-align: right; }
+        th:nth-child(2), td:nth-child(2) { text-align: center; }
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .text-xs { font-size: 11px; }
+        .text-sm { font-size: 12px; }
+        .text-base { font-size: 14px; }
+        .text-xl { font-size: 18px; }
+        .text-gray-400, .text-gray-500 { color: #888; }
+        .text-red-600 { color: #dc2626; }
+        .font-bold { font-weight: 700; }
+        .font-semibold { font-weight: 600; }
+        .font-medium { font-weight: 500; }
+        .space-y-1 > * + * { margin-top: 4px; }
+        .mb-4 { margin-bottom: 16px; }
+        .mt-4 { margin-top: 16px; }
+        .pt-1 { padding-top: 4px; }
+        .pt-2 { padding-top: 8px; }
+        .mt-1 { margin-top: 4px; }
+        .py-1 { padding: 4px 0; }
+        .border-b { border-bottom: 1px solid #ddd; }
+        .border-t { border-top: 1px solid #ddd; }
+        .border-dashed { border-style: dashed; }
+        .border-gray-100 { border-color: #eee; }
+        .flex { display: flex; }
+        .justify-between { justify-content: space-between; }
+        @media print { body { padding: 0; } }
+      </style></head><body>${content}</body></html>
+    `);
+    win.document.close();
+    win.print();
+  },
+
+  // ===== Product Image Handling =====
+  getProductImageUrl(image) {
+    if (!image) return null;
+    // If it's already a data URL (legacy), use it directly
+    if (image.startsWith('data:')) return image;
+    // Otherwise it's a filename — build file:// path
+    return 'file://' + this.productImagesPath + '/' + image;
+  },
+
+  handleProductImageUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      this.showNotification('Please select an image file', 'error');
+      return;
+    }
+
+    // Limit to 2MB
+    if (file.size > 2 * 1024 * 1024) {
+      this.showNotification('Image must be under 2MB', 'error');
+      event.target.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target.result;
+      // Store the data URL temporarily; will be saved to disk on form submit
+      document.getElementById('product-image-data').value = dataUrl;
+      const preview = document.getElementById('product-image-preview');
+      preview.innerHTML = `<img src="${dataUrl}" class="w-full h-full object-cover">`;
+      document.getElementById('btn-remove-product-image').classList.remove('hidden');
+    };
+    reader.readAsDataURL(file);
+  },
+
+  removeProductImage() {
+    document.getElementById('product-image-data').value = '__REMOVE__';
+    document.getElementById('product-image-input').value = '';
+    this.setProductImagePreview(null);
+  },
+
+  setProductImagePreview(imageValue) {
+    const preview = document.getElementById('product-image-preview');
+    const removeBtn = document.getElementById('btn-remove-product-image');
+    const url = imageValue ? this.getProductImageUrl(imageValue) : null;
+    if (url) {
+      preview.innerHTML = `<img src="${url}" class="w-full h-full object-cover">`;
+      removeBtn.classList.remove('hidden');
+    } else {
+      preview.innerHTML = '<svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>';
+      removeBtn.classList.add('hidden');
+    }
   },
 
   // Products table
@@ -515,8 +717,18 @@ const app = {
       tbody.innerHTML = pageItems.map(product => `
         <tr class="table-row">
           <td class="px-6 py-4">
-            <div class="text-sm font-medium text-gray-900">${this.escapeHtml(product.name)}</div>
-            <div class="text-sm text-gray-500">${this.escapeHtml(product.description || '')}</div>
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-gray-100 rounded flex-shrink-0 flex items-center justify-center overflow-hidden">
+                ${product.image
+                  ? `<img src="${this.getProductImageUrl(product.image)}" class="w-full h-full object-cover">`
+                  : `<svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>`
+                }
+              </div>
+              <div>
+                <div class="text-sm font-medium text-gray-900">${this.escapeHtml(product.name)}</div>
+                <div class="text-sm text-gray-500">${this.escapeHtml(product.description || '')}</div>
+              </div>
+            </div>
           </td>
           <td class="px-6 py-4 text-sm text-gray-500">${this.escapeHtml(product.sku || '-')}</td>
           <td class="px-6 py-4 text-sm text-gray-500">${this.escapeHtml(product.category || '-')}</td>
@@ -664,6 +876,8 @@ const app = {
     const title = document.getElementById('product-modal-title');
     const form = document.getElementById('product-form');
     form.reset();
+    document.getElementById('product-image-input').value = '';
+    document.getElementById('product-image-data').value = '';
 
     if (productId) {
       const product = this.products.find(p => p.id === productId);
@@ -678,9 +892,14 @@ const app = {
       document.getElementById('product-stock').value = product.stock;
       document.getElementById('product-category').value = product.category || '';
       document.getElementById('product-description').value = product.description || '';
+      // Load image preview
+      this.setProductImagePreview(product.image || null);
+      document.getElementById('product-image-data').value = product.image || '';
     } else {
       title.textContent = 'Add Product';
       document.getElementById('product-id').value = '';
+      this.setProductImagePreview(null);
+      document.getElementById('product-image-data').value = '';
     }
 
     modal.classList.remove('hidden');
@@ -693,6 +912,38 @@ const app = {
   async saveProduct(event) {
     event.preventDefault();
     const id = document.getElementById('product-id').value;
+    const imageDataValue = document.getElementById('product-image-data').value;
+
+    // Handle image: save to disk or remove
+    let imageFileName = null;
+    if (imageDataValue === '__REMOVE__') {
+      // User wants to remove image — delete old file if editing
+      if (id) {
+        const oldProduct = this.products.find(p => p.id === parseInt(id));
+        if (oldProduct && oldProduct.image) {
+          await window.api.deleteProductImage(oldProduct.image);
+        }
+      }
+      imageFileName = null;
+    } else if (imageDataValue && imageDataValue.startsWith('data:')) {
+      // New image uploaded — save to disk
+      const ext = imageDataValue.match(/^data:image\/(\\w+);/)?.[1] || 'png';
+      const fileName = `product_${Date.now()}.${ext}`;
+      await window.api.saveProductImage({ fileName, dataUrl: imageDataValue });
+      imageFileName = fileName;
+      // Delete old image file if editing
+      if (id) {
+        const oldProduct = this.products.find(p => p.id === parseInt(id));
+        if (oldProduct && oldProduct.image && oldProduct.image !== imageFileName) {
+          await window.api.deleteProductImage(oldProduct.image);
+        }
+      }
+    } else if (id) {
+      // No change — keep existing image
+      const oldProduct = this.products.find(p => p.id === parseInt(id));
+      imageFileName = oldProduct?.image || null;
+    }
+
     const product = {
       name: document.getElementById('product-name').value.trim(),
       sku: document.getElementById('product-sku').value.trim() || null,
@@ -701,7 +952,8 @@ const app = {
       cost: parseFloat(document.getElementById('product-cost').value) || null,
       stock: parseInt(document.getElementById('product-stock').value) || 0,
       category: document.getElementById('product-category').value.trim() || null,
-      description: document.getElementById('product-description').value.trim() || null
+      description: document.getElementById('product-description').value.trim() || null,
+      image: imageFileName
     };
 
     try {
@@ -801,6 +1053,7 @@ const app = {
       this.closeCustomerModal();
       await this.loadCustomers();
       this.renderCustomersTable();
+      this.populateCustomerDropdown();
     } catch (error) {
       console.error('Error saving customer:', error);
       this.showNotification('Error saving customer', 'error');
@@ -828,6 +1081,7 @@ const app = {
       this.closeConfirmModal();
       await this.loadCustomers();
       this.renderCustomersTable();
+      this.populateCustomerDropdown();
     } catch (error) {
       console.error('Error deleting customer:', error);
       this.showNotification('Error deleting customer', 'error');

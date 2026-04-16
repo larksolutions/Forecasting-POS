@@ -9,6 +9,11 @@ contextBridge.exposeInMainWorld('api', {
   updateProduct: (id, product) => ipcRenderer.invoke('db:updateProduct', id, product),
   deleteProduct: (id) => ipcRenderer.invoke('db:deleteProduct', id),
 
+  // Product images
+  saveProductImage: (data) => ipcRenderer.invoke('app:saveProductImage', data),
+  getProductImagesPath: () => ipcRenderer.invoke('app:getProductImagesPath'),
+  deleteProductImage: (fileName) => ipcRenderer.invoke('app:deleteProductImage', fileName),
+
   // Sales
   getSales: (filters) => ipcRenderer.invoke('db:getSales', filters),
   addSale: (sale) => ipcRenderer.invoke('db:addSale', sale),

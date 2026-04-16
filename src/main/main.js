@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
+const fs = require('fs');
 const Database = require('../database/database');
 
 let mainWindow;
@@ -78,6 +79,29 @@ ipcMain.handle('db:updateProduct', async (event, id, product) => {
 
 ipcMain.handle('db:deleteProduct', async (event, id) => {
   return db.deleteProduct(id);
+});
+
+// Product images
+ipcMain.handle('app:saveProductImage', async (event, { fileName, dataUrl }) => {
+  const imagesDir = path.join(app.getPath('userData'), 'product-images');
+  if (!fs.existsSync(imagesDir)) {
+    fs.mkdirSync(imagesDir, { recursive: true });
+  }
+  // Strip data URL prefix to get raw base64
+  const base64Data = dataUrl.replace(/^data:image\/\w+;base64,/, '');
+  const filePath = path.join(imagesDir, fileName);
+  fs.writeFileSync(filePath, Buffer.from(base64Data, 'base64'));
+  return fileName;
+});
+
+ipcMain.handle('app:getProductImagesPath', async () => {
+  return path.join(app.getPath('userData'), 'product-images');
+});
+
+ipcMain.handle('app:deleteProductImage', async (event, fileName) => {
+  if (!fileName) return;
+  const filePath = path.join(app.getPath('userData'), 'product-images', fileName);
+  if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
 });
 
 // Sales
